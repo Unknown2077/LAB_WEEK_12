@@ -4,6 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
+import com.google.android.material.snackbar.Snackbar
+import java.util.Calendar
 import com.example.test_lab_week_12.model.Movie
 
 class MainActivity : AppCompatActivity() {
@@ -18,9 +22,32 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         val recyclerView: RecyclerView = findViewById(R.id.movie_list)
         recyclerView.adapter = movieAdapter
+        val movieRepository = (application as MovieApplication).movieRepository
+        val movieViewModel = ViewModelProvider(
+            this, object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return MovieViewModel(movieRepository) as T
+                }
+            })[MovieViewModel::class.java]
+        movieViewModel.popularMovies.observe(this) { popularMovies: List<Movie> ->
+            val currentYear: String = Calendar.getInstance().get(Calendar.YEAR).toString()
+            movieAdapter.addMovies(
+                popularMovies
+                    .filter { movie: Movie ->
+                        // aman dari null
+                        movie.releaseDate?.startsWith(currentYear) == true
+                    }
+                    .sortedByDescending { movie: Movie -> movie.popularity }
+            )
+        }
+        movieViewModel.error.observe(this) { error: String ->
+            if (error.isNotEmpty()) {
+                Snackbar.make(recyclerView, error, Snackbar.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun openMovieDetails(movie: Movie) {
