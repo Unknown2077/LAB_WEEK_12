@@ -8,14 +8,16 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 
 class MovieRepository(private val movieService: MovieService) {
-    private val apiKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    private val apiKey = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" // replace with your TMDB API key
 
     // returns a Flow that emits a list of popular movies
     fun fetchMovies(): Flow<List<Movie>> {
         return flow {
             // call the suspend network function and emit the results
             val response = movieService.getPopularMovies(apiKey)
-            emit(response.results)
+            // sort descending by popularity to preserve prior filtering behavior
+            val sorted = response.results.sortedByDescending { it.popularity }
+            emit(sorted)
         }.flowOn(Dispatchers.IO)
     }
 }
